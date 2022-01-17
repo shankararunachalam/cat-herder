@@ -27,10 +27,7 @@ Library to help map a set of physical nodes in a cluster to a consistent hash ri
         for i, node in enumerate(nodes):
             if i == nodes_count - 1:
                 init_vnodes += init_vnodes_rem
-            self.add_node(node, init_vnodes)
-
-        print(self.nodes)
-        print(self.vnodes)
+            self.add_node(node, init_vnodes, True)
         return
 
     def get_hash(self, key):
@@ -38,25 +35,23 @@ Library to help map a set of physical nodes in a cluster to a consistent hash ri
         hsh.update(bytes(key.encode('utf-8')))
         return int(hsh.hexdigest(), 16) % self.capacity
 
-    def add_node(self, node, init_vnodes = 0):
-        print(node.host_name, init_vnodes, len([i for i in range(self.capacity) if self.vnodes[i] == -1]))
+    def add_node(self, node, vnodes = 0, init=False):
         if len(self.nodes) == self.capacity:
             return 'Trifledb operating with max. possible nodes. Unable to add a new one. Consider removing an existing node if necessary.'
         
-        if node.vnodes > self.capacity:
+        if vnodes > self.capacity:
             return 'Vnode count not supported.'
 
         #add node to nodes collection
-        node_hash = self.get_hash(node.host_name)
+        node_hash = self.get_hash(node)
         self.nodes.append((node_hash, node))
         node_number = len(self.nodes) - 1
 
         #map node to vnodes
-        if init_vnodes == 0:
-            vnodes_selected = random.sample(population=range(self.capacity), k=node.vnodes)
+        if not init:
+            vnodes_selected = random.sample(population=range(self.capacity), k=vnodes)
         else:
-            vnodes_selected = random.sample(population=[i for i in range(self.capacity) if self.vnodes[i] == -1], k=init_vnodes)
-        print(len(vnodes_selected), vnodes_selected)
+            vnodes_selected = random.sample(population=[i for i in range(self.capacity) if self.vnodes[i] == -1], k=vnodes)
         self.vnodes = [node_number if i in vnodes_selected else self.vnodes[i] for i in range(self.capacity)]
 
         # rebalance TODO
